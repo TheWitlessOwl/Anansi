@@ -297,7 +297,7 @@ export default function CharacterSheets() {
   const columnStyle: React.CSSProperties = { flex: "1 1 45%", minWidth: 120, textAlign: "center" };
   const statColumnStyle: React.CSSProperties = { flex: "1 1 30%", minWidth: 80, textAlign: "center" };
   const labelStyle: React.CSSProperties = { fontWeight: "bold" };
-  const inputStyleText: React.CSSProperties = { padding: 6, border: "1px solid #000000ff", borderRadius: 4, width: "100%" };
+  const inputStyleText: React.CSSProperties = { padding: 6, border: "1px solid #ccc", borderRadius: 4, width: "100%" };
   const inputStyleNumber: React.CSSProperties = { padding: 4, border: "1px solid #ccc", borderRadius: 4, width: 60, textAlign: "center" };
   const sectionHeaderStyle: React.CSSProperties = { fontWeight: "bold", fontSize: 16, borderBottom: "1px solid #aaa", marginBottom: 6, paddingBottom: 4, textAlign: "center" };
   const buttonStyle: React.CSSProperties = { padding: "6px 12px", borderRadius: 4, border: "1px solid #333", cursor: "pointer", background: "#f0f0f0", textAlign: "center", fontFamily: "inherit", fontSize: "inherit" };
