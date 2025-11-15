@@ -435,6 +435,13 @@ function applySettings(settings) {
     header.style.display = settings.showPartyTitle ? "block" : "none";
     updateDebug(`Party title visibility: ${settings.showPartyTitle}`);
   }
+
+  // Show/hide party code
+  if (settings.showPartyCode !== undefined) {
+    const partyCodeEl = document.getElementById("partyCode");
+    partyCodeEl.style.display = settings.showPartyCode ? "block" : "none";
+    updateDebug(`Party code visibility: ${settings.showPartyCode}`);
+  }
 }
 
 function listenToSettings(code) {
