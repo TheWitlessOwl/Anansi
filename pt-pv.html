@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Party Tracker</title>
+<title>Party Tracker - Player View</title>
 <link rel="icon" type="image/png" href="logo.svg" />
 <style>
 body {
@@ -14,6 +14,7 @@ body {
   color: #000000;
   min-height: 100vh;
   text-shadow: 1px 1px 2px #000000;
+  margin: 0;
 }
 
 h1, #partyName, #levelText, .player-box {
@@ -35,6 +36,12 @@ h1 {
   margin: 10px 0 20px 0;
 }
 
+#partyCode {
+  font-size: 1.2em;
+  opacity: 0.7;
+  margin-bottom: 20px;
+}
+
 .xp-bar {
   width: 80%;
   max-width: 800px;
@@ -51,6 +58,7 @@ h1 {
   height: 100%;
   width: 0%;
   position: relative;
+  transition: width 0.3s linear;
 }
 
 .xp-gradient {
@@ -59,6 +67,7 @@ h1 {
   left: 0;
   height: 100%;
   width: 100%;
+  background: linear-gradient(90deg, #FF0000, #FF7F00, #FFFF00, #00FF00, #0000FF, #4B0082, #8B00FF);
   background-size: 100% 100%;
 }
 
@@ -102,15 +111,38 @@ h1 {
   transition: opacity 0.8s ease-out;
   z-index: 9999;
 }
+
 #levelUpPopup.show { 
   opacity: 1; 
+}
+
+#errorMessage {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 0, 0, 0.9);
+  color: white;
+  padding: 15px 30px;
+  border-radius: 5px;
+  font-size: 1.2em;
+  display: none;
+  z-index: 10000;
+}
+
+#loadingMessage {
+  font-size: 2em;
+  margin-top: 50px;
 }
 </style>
 </head>
 <body>
 <h1 id="header">Party Tracker</h1>
+<div id="partyCode"></div>
 <div id="partyName"></div>
 <div id="levelText"></div>
+<div id="loadingMessage">Loading party data...</div>
+<div id="errorMessage"></div>
 
 <div class="xp-bar">
   <div class="xp-fill" id="xpFill">
@@ -121,96 +153,86 @@ h1 {
 <div id="characterNames"></div>
 <div id="levelUpPopup">LEVEL UP!</div>
 
-<script>
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+import { getDatabase, ref, onValue } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
 const xpThresholds = [0,300,900,2700,6500,14000,23000,34000,48000,64000,
   85000,100000,120000,140000,165000,195000,225000,265000,305000,355000
 ];
 
-let lastLevel;
+// Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyAJDqSAHJDvUrgW6clk3BaNqUz5Gq7E3hY",
+  authDomain: "anansi-party-tracker.firebaseapp.com",
+  databaseURL: "https://anansi-party-tracker-default-rtdb.firebaseio.com",
+  projectId: "anansi-party-tracker",
+  storageBucket: "anansi-party-tracker.firebasestorage.app",
+  messagingSenderId: "627434109412",
+  appId: "1:627434109412:web:f4f9676f30095aa8feaff1"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const database = getDatabase(app);
+
+let lastLevel = 1;
 let isAnimating = false;
 let popupTimeout;
-let initialLoad = true;
 
-// Read data from URL on initial load
+// Get party code from URL
 const urlParams = new URLSearchParams(window.location.search);
-const urlData = urlParams.get('data');
+const partyCode = urlParams.get('code');
 
-if (urlData) {
-  try {
-    const parsedData = JSON.parse(decodeURIComponent(urlData));
-    localStorage.setItem("partyData", JSON.stringify(parsedData));
-    console.log("Loaded party data from URL:", parsedData);
-  } catch (e) {
-    console.error("Error parsing URL data:", e);
-  }
+if (!partyCode) {
+  showError("No party code provided in URL. Please use a valid party tracker link.");
+} else {
+  document.getElementById('partyCode').textContent = `Party Code: ${partyCode}`;
+  listenToPartyData(partyCode);
 }
 
-function calculateLevel(totalXP){
+function showError(message) {
+  const errorEl = document.getElementById('errorMessage');
+  errorEl.textContent = message;
+  errorEl.style.display = 'block';
+  document.getElementById('loadingMessage').style.display = 'none';
+}
+
+function hideLoading() {
+  document.getElementById('loadingMessage').style.display = 'none';
+}
+
+function calculateLevel(totalXP) {
   for(let i = xpThresholds.length-1; i>=0; i--){
     if(totalXP >= xpThresholds[i]) return i+1;
   }
   return 1;
 }
 
-const storedXP = JSON.parse(localStorage.getItem("partyData") || "{}").totalXP || 0;
-lastLevel = calculateLevel(storedXP);
-
-function getXpBarColor() {
-  const colorSetting = localStorage.getItem("xpBarColor") || "rainbow";
-  if(/^#([0-9A-Fa-f]{6})$/.test(colorSetting)) return colorSetting;
-  return colorSetting;
-}
-
-function getFontColor() {
-  const colorSetting = localStorage.getItem("fontColor") || "black";
-  if(/^#([0-9A-Fa-f]{6})$/.test(colorSetting)) return colorSetting;
-  return colorSetting;
-}
-
-function applyBackgroundImage() {
-  const bgUrl = localStorage.getItem("backgroundImageUrl");
-  if (bgUrl && bgUrl.trim() !== "") {
-    document.body.style.backgroundImage = `url('${bgUrl}')`;
-  } else {
-    document.body.style.backgroundImage = "url('background.jpg')";
-  }
-}
-
-function applyFontColor() {
-  const color = getFontColor();
-  document.body.style.color = color;
-}
-
-function updateXpGradient() {
-  const gradientDiv = document.getElementById("xpGradient");
-  const colorSetting = getXpBarColor();
-  if(colorSetting === "rainbow") {
-    gradientDiv.style.background = "linear-gradient(90deg, #FF0000, #FF7F00, #FFFF00, #00FF00, #0000FF, #4B0082, #8B00FF)";
-  } else {
-    gradientDiv.style.background = colorSetting;
-  }
-}
-
-function showLevelUpPopup(level){
+function showLevelUpPopup(level) {
   const popup = document.getElementById("levelUpPopup");
   popup.textContent = `Level ${level}!`;
   popup.classList.add("show");
   clearTimeout(popupTimeout);
-  popupTimeout = setTimeout(()=>{ popup.classList.remove("show"); }, 2000);
+  popupTimeout = setTimeout(() => { 
+    popup.classList.remove("show"); 
+  }, 2000);
 }
 
-function updatePlayerList(names){
+function updatePlayerList(names) {
   const container = document.getElementById("characterNames");
   container.innerHTML = "";
   if(!names || names.length === 0) return;
+  
   const maxPerRow = 5;
-  for(let i=0;i<names.length;i+=maxPerRow){
+  for(let i=0; i<names.length; i+=maxPerRow){
     const rowDiv = document.createElement("div");
     rowDiv.className = "player-row";
-    names.slice(i,i+maxPerRow).forEach(name=>{
-      if(name.trim()!==""){
+    names.slice(i, i+maxPerRow).forEach(name => {
+      if(name && name.trim() !== ""){
         const div = document.createElement("div");
-        div.className="player-box";
+        div.className = "player-box";
         div.textContent = name;
         rowDiv.appendChild(div);
       }
@@ -219,7 +241,7 @@ function updatePlayerList(names){
   }
 }
 
-function animateXPBar(targetPercent){
+function animateXPBar(targetPercent) {
   return new Promise(resolve => {
     const xpFill = document.getElementById("xpFill");
     xpFill.style.transition = "width 0.4s linear";
@@ -228,9 +250,10 @@ function animateXPBar(targetPercent){
   });
 }
 
-async function animateLevelUps(levels){
+async function animateLevelUps(levels) {
   isAnimating = true;
   const xpFill = document.getElementById("xpFill");
+  
   for(let lvl of levels){
     await animateXPBar(100);
     showLevelUpPopup(lvl);
@@ -239,102 +262,88 @@ async function animateLevelUps(levels){
     lastLevel = lvl;
     await new Promise(r => setTimeout(r, 2200));
   }
+  
   isAnimating = false;
-  updatePartyView();
 }
 
-async function updatePartyView(skipAnimation = false){
-  updateXpGradient();
-  applyBackgroundImage();
-  applyFontColor();
+async function updatePartyView(data) {
+  hideLoading();
   
-  const data = JSON.parse(localStorage.getItem("partyData") || "{}");
+  if (!data) {
+    showError("No party data found. Make sure your DM has set up the party.");
+    return;
+  }
+
   const totalXP = data.totalXP || 0;
   const partyName = data.partyName || "";
   const mode = data.mode || "XP";
-
-  const showTitle = JSON.parse(localStorage.getItem("showPartyTitle") || "true");
-  const header = document.getElementById("header");
-  header.style.display = showTitle ? "block" : "none";
+  const characterNames = data.characterNames || [];
 
   document.getElementById("partyName").innerText = partyName;
 
   const xpBar = document.querySelector(".xp-bar");
   const levelText = document.getElementById("levelText");
+  const level = calculateLevel(totalXP);
 
   if(mode === "Milestone"){
     xpBar.style.display = "none";
-    const level = calculateLevel(totalXP);
     levelText.style.display = "block";
     levelText.style.fontSize = "3em";
     levelText.innerText = `Level ${level}`;
-    if(level > lastLevel) showLevelUpPopup(level);
+    
+    if(level > lastLevel) {
+      showLevelUpPopup(level);
+    }
     lastLevel = level;
   } else {
     xpBar.style.display = "block";
     levelText.style.fontSize = "1.5em";
-    const level = calculateLevel(totalXP);
+    
     const currentXP = totalXP - xpThresholds[level-1];
     const neededXP = level < xpThresholds.length ? xpThresholds[level] - xpThresholds[level-1] : 1;
     const percent = Math.min(100, (currentXP / neededXP) * 100);
 
     if(!isAnimating){
-      if(initialLoad || skipAnimation){
-        xpBar.querySelector(".xp-fill").style.transition = "none";
-        xpBar.querySelector(".xp-fill").style.width = percent + "%";
-        levelText.style.display = "block";
-        levelText.innerText = level < xpThresholds.length
-          ? `Level ${level} | XP: ${currentXP} / ${neededXP}`
-          : `Level ${level} | Max Level`;
-        lastLevel = level;
-      } else {
-        xpBar.querySelector(".xp-fill").style.transition = "width 0.3s linear";
-        xpBar.querySelector(".xp-fill").style.width = percent + "%";
-        levelText.style.display = "block";
-        levelText.innerText = level < xpThresholds.length
-          ? `Level ${level} | XP: ${currentXP} / ${neededXP}`
-          : `Level ${level} | Max Level`;
-        if(level > lastLevel){
-          const levelsToAnimate = [];
-          for(let l = lastLevel + 1; l <= level; l++) levelsToAnimate.push(l);
-          await animateLevelUps(levelsToAnimate);
-          return;
+      if(level > lastLevel){
+        const levelsToAnimate = [];
+        for(let l = lastLevel + 1; l <= level; l++) {
+          levelsToAnimate.push(l);
         }
-        lastLevel = level;
+        await animateLevelUps(levelsToAnimate);
+        
+        // After animation, set the correct percentage
+        const xpFill = document.getElementById("xpFill");
+        xpFill.style.transition = "none";
+        xpFill.style.width = percent + "%";
+      } else {
+        const xpFill = document.getElementById("xpFill");
+        xpFill.style.width = percent + "%";
       }
+      
+      levelText.style.display = "block";
+      levelText.innerText = level < xpThresholds.length
+        ? `Level ${level} | XP: ${currentXP} / ${neededXP}`
+        : `Level ${level} | Max Level`;
+      
+      lastLevel = level;
     }
   }
 
-  updatePlayerList(data.characterNames || []);
-  initialLoad = false;
+  updatePlayerList(characterNames);
 }
 
-// Listen for messages from parent window
-window.addEventListener("message", (event) => {
-  if(event.data === "refreshPlayerView"){
-    updatePartyView();
-  }
-
-  // Handle party updates from parent window
-  if(event.data?.type === "partyUpdate" && event.data.data){
-    localStorage.setItem("partyData", JSON.stringify(event.data.data));
-    updatePartyView();
-  }
-
-  if(event.data?.type === "setXP" && typeof event.data.data?.totalXP === "number"){
-    const newXP = event.data.data.totalXP;
-    const savedData = JSON.parse(localStorage.getItem("partyData") || "{}");
-    savedData.totalXP = newXP;
-    localStorage.setItem("partyData", JSON.stringify(savedData));
-    updatePartyView(true);
-  }
-});
-
-// Initial render
-updatePartyView(true);
-
-// Poll for updates (useful for OBS)
-setInterval(updatePartyView, 500);
+function listenToPartyData(code) {
+  const partyRef = ref(database, `parties/${code}`);
+  
+  onValue(partyRef, (snapshot) => {
+    const data = snapshot.val();
+    console.log("Firebase data received:", data);
+    updatePartyView(data);
+  }, (error) => {
+    console.error("Firebase error:", error);
+    showError("Error loading party data: " + error.message);
+  });
+}
 </script>
 </body>
 </html>
