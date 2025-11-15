@@ -9,16 +9,14 @@ body {
   font-family: 'BlackChancery', cursive;
   text-align: center;
   padding: 50px;
-  background: url('background.jpg') no-repeat center center fixed;
+  background: url('background.jpg') no-repeat center center;
   background-size: cover;
   color: #000000;
   min-height: 100vh;
-  /* subtle shadow for body text fallback */
   text-shadow: 1px 1px 2px #000000;
 }
 
 h1, #partyName, #levelText, .player-box {
-  /* subtle text shadow for all main text */
   text-shadow: 1px 1px 2px #000000;
 }
 
@@ -132,6 +130,20 @@ let lastLevel;
 let isAnimating = false;
 let popupTimeout;
 let initialLoad = true;
+
+// Read data from URL on initial load
+const urlParams = new URLSearchParams(window.location.search);
+const urlData = urlParams.get('data');
+
+if (urlData) {
+  try {
+    const parsedData = JSON.parse(decodeURIComponent(urlData));
+    localStorage.setItem("partyData", JSON.stringify(parsedData));
+    console.log("Loaded party data from URL:", parsedData);
+  } catch (e) {
+    console.error("Error parsing URL data:", e);
+  }
+}
 
 function calculateLevel(totalXP){
   for(let i = xpThresholds.length-1; i>=0; i--){
@@ -254,7 +266,7 @@ async function updatePartyView(skipAnimation = false){
     xpBar.style.display = "none";
     const level = calculateLevel(totalXP);
     levelText.style.display = "block";
-    levelText.style.fontSize = "3em"; // bigger for Milestone
+    levelText.style.fontSize = "3em";
     levelText.innerText = `Level ${level}`;
     if(level > lastLevel) showLevelUpPopup(level);
     lastLevel = level;
@@ -297,8 +309,15 @@ async function updatePartyView(skipAnimation = false){
   initialLoad = false;
 }
 
+// Listen for messages from parent window
 window.addEventListener("message", (event) => {
   if(event.data === "refreshPlayerView"){
+    updatePartyView();
+  }
+
+  // Handle party updates from parent window
+  if(event.data?.type === "partyUpdate" && event.data.data){
+    localStorage.setItem("partyData", JSON.stringify(event.data.data));
     updatePartyView();
   }
 
@@ -311,7 +330,10 @@ window.addEventListener("message", (event) => {
   }
 });
 
+// Initial render
 updatePartyView(true);
+
+// Poll for updates (useful for OBS)
 setInterval(updatePartyView, 500);
 </script>
 </body>
