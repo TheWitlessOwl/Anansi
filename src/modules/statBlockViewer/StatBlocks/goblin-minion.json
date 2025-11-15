@@ -1,0 +1,61 @@
+{
+  "name": "Goblin - Minion",
+  "size": "Small",
+  "type": "Fey",
+  "tags": ["Goblinoid"],
+  "alignment": "Chaotic Neutral",
+
+  "armorClass": 12,
+  "hitPoints": 7,
+  "speed": {
+    "walk": 30,
+    "climb": null,
+    "fly": null,
+    "swim": null,
+    "burrow": null
+  },
+
+  "initiative": 2,
+
+  "abilities": {
+    "str": { "score": 8, "mod": -1, "save": -1 },
+    "dex": { "score": 15, "mod": 2, "save": 2 },
+    "con": { "score": 10, "mod": 0, "save": 0 },
+    "int": { "score": 10, "mod": 0, "save": 0 },
+    "wis": { "score": 8, "mod": -1, "save": -1 },
+    "cha": { "score": 8, "mod": -1, "save": -1 }
+  },
+
+  "skills": {
+    "Stealth": 6,
+    "Perception": 2
+  },
+
+  "resistances": [],
+  "immunities": [],
+  "gear": ["Daggers (3)"],
+  "senses": ["Darkvision (60 ft.)", "Passive Perception (9)"],
+  "languages": ["Common", "Goblin"],
+  "challengeRating": 0.125,
+
+  "traits": [
+  ],
+
+  "actions": [
+    {
+      "name": "Dagger",
+      "desc": "*Melee or Attack Roll:* +4, reach 5ft. or range 20/60ft. *Hit:* 4 (1d4 + 2). Piercing Damage."
+    }
+  ],
+
+  "bonusActions": [
+        {
+      "name": "Nimble Escape",
+      "desc": "The goblin takes the *Disengage* or *Hide* action."
+    }
+  ],
+  "reactions": [],
+  "legendaryActions": [],
+
+  "imageUrl": "https://www.dndbeyond.com/avatars/thumbnails/47138/924/1000/1000/638741964201480855.png"
+}

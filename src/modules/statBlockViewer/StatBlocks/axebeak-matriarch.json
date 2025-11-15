@@ -1,0 +1,89 @@
+{
+  "name": "Matriarch Axe Beak",
+  "size": "Large",
+  "type": "Beast",
+  "tags": [],
+  "alignment": "Unaligned",
+
+  "armorClass": 13,
+  "hitPoints": 85,
+  "hitDice": "10d10 + 30",
+
+  "initiative": 2,
+  "initiativeAverage": 12,
+
+  "speed": {
+    "walk": 50,
+    "climb": null,
+    "fly": null,
+    "swim": null,
+    "burrow": null
+  },
+
+  "abilities": {
+    "str": { "score": 17, "mod": 3, "save": 3 },
+    "dex": { "score": 14, "mod": 2, "save": 4 },
+    "con": { "score": 16, "mod": 3, "save": 3 },
+    "int": { "score": 2, "mod": -4, "save": -4 },
+    "wis": { "score": 12, "mod": 1, "save": 1 },
+    "cha": { "score": 7, "mod": -2, "save": -2 }
+  },
+
+  "skills": {
+    "Perception": 3
+  },
+
+  "resistances": [],
+  "immunities": [],
+  "gear": [],
+  "senses": [
+    "Passive Perception (13)"
+  ],
+  "languages": [],
+  "challengeRating": 3,
+  "lairXp": 700,
+
+  "traits": [
+    {
+      "name": "Keen Sight",
+      "desc": "The axe beak has advantage on Wisdom (Perception) checks that rely on sight."
+    },
+    {
+      "name": "Brood Guardian",
+      "desc": "While within 30 feet of one or more other axe beaks, the Matriarch has advantage on attack rolls against a creature that has damaged any of those allies since the end of her last turn."
+    },
+    {
+      "name": "Trampling Charge",
+      "desc": "If the Matriarch moves at least 20 feet straight toward a creature and then hits it with a Beak attack on the same turn, that target must succeed on a DC 13 Strength saving throw or be knocked prone. The Matriarch can make one Talon attack against that target as a bonus action."
+    }
+  ],
+
+  "actions": [
+    {
+      "name": "Multiattack",
+      "desc": "The Matriarch makes two attacks: one with her Beak and one with her Talons."
+    },
+    {
+      "name": "Beak",
+      "desc": "*Melee Weapon Attack:* +5 to hit, reach 5 ft., one target. *Hit:* 10 (2d6 + 3) piercing damage."
+    },
+    {
+      "name": "Talons",
+      "desc": "*Melee Weapon Attack:* +5 to hit, reach 5 ft., one target. *Hit:* 9 (2d4 + 3) slashing damage."
+    }
+  ],
+
+  "bonusActions": [
+    {
+      "name": "Rallying Cry (1/Day)",
+      "desc": "The Matriarch lets out a thunderous screech. Up to three other axe beaks of her choice within 60 feet that can hear her can immediately move up to half their speed without provoking opportunity attacks. Each gains advantage on the next attack roll it makes before the start of the Matriarch’s next turn."
+    }
+  ],
+
+  "reactions": [],
+
+  "legendarySubtitle": "",
+  "legendaryActions": [],
+
+  "imageUrl": ""
+}
