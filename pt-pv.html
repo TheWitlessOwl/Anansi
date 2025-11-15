@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Party Tracker</title>
+<link rel="icon" type="image/png" href="logo.svg" />
+<style>
+body {
+  font-family: 'BlackChancery', cursive;
+  text-align: center;
+  padding: 50px;
+  background: url('background.jpg') no-repeat center center fixed;
+  background-size: cover;
+  color: #000000;
+  min-height: 100vh;
+  /* subtle shadow for body text fallback */
+  text-shadow: 1px 1px 2px #000000;
+}
+
+h1, #partyName, #levelText, .player-box {
+  /* subtle text shadow for all main text */
+  text-shadow: 1px 1px 2px #000000;
+}
+
+h1 { 
+  font-size: 3em; 
+  margin-bottom: 20px;
+}
+
+#levelText { 
+  font-size: 1.5em; 
+  margin-top: 10px;
+}
+
+#partyName { 
+  font-size: 3em; 
+  margin: 10px 0 20px 0;
+}
+
+.xp-bar {
+  width: 80%;
+  max-width: 800px;
+  margin: 20px auto;
+  height: 28px;
+  background: #222;
+  border: 1px solid #cccccc33;
+  border-radius: 5px;
+  overflow: hidden;
+  position: relative;
+}
+
+.xp-fill {
+  height: 100%;
+  width: 0%;
+  position: relative;
+}
+
+.xp-gradient {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  background-size: 100% 100%;
+}
+
+#characterNames { 
+  margin-top: 30px; 
+  display: flex; 
+  flex-direction: column; 
+  gap: 15px; 
+  align-items: center; 
+}
+
+.player-row { 
+  display: flex; 
+  gap: 15px; 
+  justify-content: center; 
+  flex-wrap: wrap; 
+}
+
+.player-box { 
+  font-size: 2em; 
+  min-width: 120px; 
+  padding: 8px 10px; 
+  transition: transform 0.2s ease; 
+  text-align: center; 
+}
+
+#levelUpPopup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 4em;
+  padding: 20px 40px;
+  background: rgba(0,0,0,0.8);
+  border: 3px solid gold;
+  border-radius: 15px;
+  color: gold;
+  text-shadow: 2px 2px 10px #000000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.8s ease-out;
+  z-index: 9999;
+}
+#levelUpPopup.show { 
+  opacity: 1; 
+}
+</style>
+</head>
+<body>
+<h1 id="header">Party Tracker</h1>
+<div id="partyName"></div>
+<div id="levelText"></div>
+
+<div class="xp-bar">
+  <div class="xp-fill" id="xpFill">
+    <div class="xp-gradient" id="xpGradient"></div>
+  </div>
+</div>
+
+<div id="characterNames"></div>
+<div id="levelUpPopup">LEVEL UP!</div>
+
+<script>
+const xpThresholds = [0,300,900,2700,6500,14000,23000,34000,48000,64000,
+  85000,100000,120000,140000,165000,195000,225000,265000,305000,355000
+];
+
+let lastLevel;
+let isAnimating = false;
+let popupTimeout;
+let initialLoad = true;
+
+function calculateLevel(totalXP){
+  for(let i = xpThresholds.length-1; i>=0; i--){
+    if(totalXP >= xpThresholds[i]) return i+1;
+  }
+  return 1;
+}
+
+const storedXP = JSON.parse(localStorage.getItem("partyData") || "{}").totalXP || 0;
+lastLevel = calculateLevel(storedXP);
+
+function getXpBarColor() {
+  const colorSetting = localStorage.getItem("xpBarColor") || "rainbow";
+  if(/^#([0-9A-Fa-f]{6})$/.test(colorSetting)) return colorSetting;
+  return colorSetting;
+}
+
+function getFontColor() {
+  const colorSetting = localStorage.getItem("fontColor") || "black";
+  if(/^#([0-9A-Fa-f]{6})$/.test(colorSetting)) return colorSetting;
+  return colorSetting;
+}
+
+function applyBackgroundImage() {
+  const bgUrl = localStorage.getItem("backgroundImageUrl");
+  if (bgUrl && bgUrl.trim() !== "") {
+    document.body.style.backgroundImage = `url('${bgUrl}')`;
+  } else {
+    document.body.style.backgroundImage = "url('background.jpg')";
+  }
+}
+
+function applyFontColor() {
+  const color = getFontColor();
+  document.body.style.color = color;
+}
+
+function updateXpGradient() {
+  const gradientDiv = document.getElementById("xpGradient");
+  const colorSetting = getXpBarColor();
+  if(colorSetting === "rainbow") {
+    gradientDiv.style.background = "linear-gradient(90deg, #FF0000, #FF7F00, #FFFF00, #00FF00, #0000FF, #4B0082, #8B00FF)";
+  } else {
+    gradientDiv.style.background = colorSetting;
+  }
+}
+
+function showLevelUpPopup(level){
+  const popup = document.getElementById("levelUpPopup");
+  popup.textContent = `Level ${level}!`;
+  popup.classList.add("show");
+  clearTimeout(popupTimeout);
+  popupTimeout = setTimeout(()=>{ popup.classList.remove("show"); }, 2000);
+}
+
+function updatePlayerList(names){
+  const container = document.getElementById("characterNames");
+  container.innerHTML = "";
+  if(!names || names.length === 0) return;
+  const maxPerRow = 5;
+  for(let i=0;i<names.length;i+=maxPerRow){
+    const rowDiv = document.createElement("div");
+    rowDiv.className = "player-row";
+    names.slice(i,i+maxPerRow).forEach(name=>{
+      if(name.trim()!==""){
+        const div = document.createElement("div");
+        div.className="player-box";
+        div.textContent = name;
+        rowDiv.appendChild(div);
+      }
+    });
+    container.appendChild(rowDiv);
+  }
+}
+
+function animateXPBar(targetPercent){
+  return new Promise(resolve => {
+    const xpFill = document.getElementById("xpFill");
+    xpFill.style.transition = "width 0.4s linear";
+    xpFill.style.width = targetPercent + "%";
+    setTimeout(resolve, 450);
+  });
+}
+
+async function animateLevelUps(levels){
+  isAnimating = true;
+  const xpFill = document.getElementById("xpFill");
+  for(let lvl of levels){
+    await animateXPBar(100);
+    showLevelUpPopup(lvl);
+    xpFill.style.transition = "none";
+    xpFill.style.width = "0%";
+    lastLevel = lvl;
+    await new Promise(r => setTimeout(r, 2200));
+  }
+  isAnimating = false;
+  updatePartyView();
+}
+
+async function updatePartyView(skipAnimation = false){
+  updateXpGradient();
+  applyBackgroundImage();
+  applyFontColor();
+  
+  const data = JSON.parse(localStorage.getItem("partyData") || "{}");
+  const totalXP = data.totalXP || 0;
+  const partyName = data.partyName || "";
+  const mode = data.mode || "XP";
+
+  const showTitle = JSON.parse(localStorage.getItem("showPartyTitle") || "true");
+  const header = document.getElementById("header");
+  header.style.display = showTitle ? "block" : "none";
+
+  document.getElementById("partyName").innerText = partyName;
+
+  const xpBar = document.querySelector(".xp-bar");
+  const levelText = document.getElementById("levelText");
+
+  if(mode === "Milestone"){
+    xpBar.style.display = "none";
+    const level = calculateLevel(totalXP);
+    levelText.style.display = "block";
+    levelText.style.fontSize = "3em"; // bigger for Milestone
+    levelText.innerText = `Level ${level}`;
+    if(level > lastLevel) showLevelUpPopup(level);
+    lastLevel = level;
+  } else {
+    xpBar.style.display = "block";
+    levelText.style.fontSize = "1.5em";
+    const level = calculateLevel(totalXP);
+    const currentXP = totalXP - xpThresholds[level-1];
+    const neededXP = level < xpThresholds.length ? xpThresholds[level] - xpThresholds[level-1] : 1;
+    const percent = Math.min(100, (currentXP / neededXP) * 100);
+
+    if(!isAnimating){
+      if(initialLoad || skipAnimation){
+        xpBar.querySelector(".xp-fill").style.transition = "none";
+        xpBar.querySelector(".xp-fill").style.width = percent + "%";
+        levelText.style.display = "block";
+        levelText.innerText = level < xpThresholds.length
+          ? `Level ${level} | XP: ${currentXP} / ${neededXP}`
+          : `Level ${level} | Max Level`;
+        lastLevel = level;
+      } else {
+        xpBar.querySelector(".xp-fill").style.transition = "width 0.3s linear";
+        xpBar.querySelector(".xp-fill").style.width = percent + "%";
+        levelText.style.display = "block";
+        levelText.innerText = level < xpThresholds.length
+          ? `Level ${level} | XP: ${currentXP} / ${neededXP}`
+          : `Level ${level} | Max Level`;
+        if(level > lastLevel){
+          const levelsToAnimate = [];
+          for(let l = lastLevel + 1; l <= level; l++) levelsToAnimate.push(l);
+          await animateLevelUps(levelsToAnimate);
+          return;
+        }
+        lastLevel = level;
+      }
+    }
+  }
+
+  updatePlayerList(data.characterNames || []);
+  initialLoad = false;
+}
+
+window.addEventListener("message", (event) => {
+  if(event.data === "refreshPlayerView"){
+    updatePartyView();
+  }
+
+  if(event.data?.type === "setXP" && typeof event.data.data?.totalXP === "number"){
+    const newXP = event.data.data.totalXP;
+    const savedData = JSON.parse(localStorage.getItem("partyData") || "{}");
+    savedData.totalXP = newXP;
+    localStorage.setItem("partyData", JSON.stringify(savedData));
+    updatePartyView(true);
+  }
+});
+
+updatePartyView(true);
+setInterval(updatePartyView, 500);
+</script>
+</body>
+</html>
