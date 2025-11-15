@@ -138,6 +138,7 @@ h1 {
 </head>
 <body>
 <h1 id="header">Party Tracker</h1>
+<div id="partyCode"></div>
 <div id="partyName"></div>
 <div id="levelText"></div>
 <div id="loadingMessage">Loading party data...</div>
@@ -189,6 +190,7 @@ if (!partyCode) {
 } else {
   document.getElementById('partyCode').textContent = `Party Code: ${partyCode}`;
   listenToPartyData(partyCode);
+  listenToSettings(partyCode);
 }
 
 function showError(message) {
@@ -329,6 +331,74 @@ async function updatePartyView(data) {
   }
 
   updatePlayerList(characterNames);
+}
+
+function applyXPBarColor(color) {
+  const xpGradient = document.getElementById("xpGradient");
+  const xpFill = document.getElementById("xpFill");
+  
+  const colorMap = {
+    rainbow: "linear-gradient(90deg, #FF0000, #FF7F00, #FFFF00, #00FF00, #0000FF, #4B0082, #8B00FF)",
+    red: "#dc2626",
+    green: "#16a34a",
+    blue: "#2563eb",
+    purple: "#9333ea",
+    orange: "#ea580c"
+  };
+
+  if (colorMap[color]) {
+    xpGradient.style.background = colorMap[color];
+  } else if (color && color.startsWith("#")) {
+    // Custom hex color
+    xpGradient.style.background = color;
+  }
+}
+
+function applySettings(settings) {
+  if (!settings) return;
+
+  // Apply XP bar color
+  if (settings.xpBarColor) {
+    applyXPBarColor(settings.xpBarColor);
+  }
+
+  // Apply background image
+  if (settings.backgroundImageUrl) {
+    document.body.style.backgroundImage = `url('${settings.backgroundImageUrl}')`;
+  }
+
+  // Apply font color
+  if (settings.fontColor) {
+    const colorMap = {
+      black: "#000000",
+      white: "#ffffff",
+      gold: "#ffd700",
+      silver: "#c0c0c0",
+      red: "#dc2626",
+      blue: "#2563eb"
+    };
+
+    const color = colorMap[settings.fontColor] || settings.fontColor;
+    document.body.style.color = color;
+  }
+
+  // Show/hide party title
+  if (settings.showPartyTitle !== undefined) {
+    const header = document.getElementById("header");
+    header.style.display = settings.showPartyTitle ? "block" : "none";
+  }
+}
+
+function listenToSettings(code) {
+  const settingsRef = ref(database, `parties/${code}/settings`);
+  
+  onValue(settingsRef, (snapshot) => {
+    const settings = snapshot.val();
+    console.log("Settings received:", settings);
+    applySettings(settings);
+  }, (error) => {
+    console.warn("Settings error (non-critical):", error);
+  });
 }
 
 function listenToPartyData(code) {
