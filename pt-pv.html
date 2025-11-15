@@ -134,6 +134,20 @@ h1 {
   font-size: 2em;
   margin-top: 50px;
 }
+
+#debugInfo {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  background: rgba(0,0,0,0.7);
+  color: white;
+  padding: 10px;
+  font-size: 0.8em;
+  border-radius: 5px;
+  max-width: 300px;
+  text-align: left;
+  font-family: monospace;
+}
 </style>
 </head>
 <body>
@@ -152,6 +166,7 @@ h1 {
 
 <div id="characterNames"></div>
 <div id="levelUpPopup">LEVEL UP!</div>
+<div id="debugInfo" style="display: none;"></div>
 
 <!-- Firebase SDK -->
 <script type="module">
@@ -180,15 +195,36 @@ const database = getDatabase(app);
 let lastLevel = 1;
 let isAnimating = false;
 let popupTimeout;
+let dataReceived = false;
+
+// Debug logging
+function updateDebug(message) {
+  const debugEl = document.getElementById('debugInfo');
+  const now = new Date().toLocaleTimeString();
+  debugEl.innerHTML = `${now}: ${message}<br>` + debugEl.innerHTML;
+  console.log(`[${now}] ${message}`);
+}
+
+// Show debug on key press
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'd' || e.key === 'D') {
+    const debugEl = document.getElementById('debugInfo');
+    debugEl.style.display = debugEl.style.display === 'none' ? 'block' : 'none';
+  }
+});
 
 // Get party code from URL
 const urlParams = new URLSearchParams(window.location.search);
 const partyCode = urlParams.get('code');
 
+updateDebug(`Party code from URL: ${partyCode}`);
+
 if (!partyCode) {
   showError("No party code provided in URL. Please use a valid party tracker link.");
+  updateDebug("ERROR: No party code in URL");
 } else {
   document.getElementById('partyCode').textContent = `Party Code: ${partyCode}`;
+  updateDebug(`Starting Firebase listeners for: ${partyCode}`);
   listenToPartyData(partyCode);
   listenToSettings(partyCode);
 }
@@ -198,6 +234,7 @@ function showError(message) {
   errorEl.textContent = message;
   errorEl.style.display = 'block';
   document.getElementById('loadingMessage').style.display = 'none';
+  updateDebug(`ERROR: ${message}`);
 }
 
 function hideLoading() {
@@ -269,11 +306,15 @@ async function animateLevelUps(levels) {
 
 async function updatePartyView(data) {
   hideLoading();
+  dataReceived = true;
   
   if (!data) {
     showError("No party data found. Make sure your DM has set up the party.");
+    updateDebug("No data in Firebase snapshot");
     return;
   }
+
+  updateDebug(`Data received: XP=${data.totalXP}, Level=${data.level}, Mode=${data.mode}`);
 
   const totalXP = data.totalXP || 0;
   const partyName = data.partyName || "";
@@ -312,7 +353,6 @@ async function updatePartyView(data) {
         }
         await animateLevelUps(levelsToAnimate);
         
-        // After animation, set the correct percentage
         const xpFill = document.getElementById("xpFill");
         xpFill.style.transition = "none";
         xpFill.style.width = percent + "%";
@@ -335,7 +375,6 @@ async function updatePartyView(data) {
 
 function applyXPBarColor(color) {
   const xpGradient = document.getElementById("xpGradient");
-  const xpFill = document.getElementById("xpFill");
   
   const colorMap = {
     rainbow: "linear-gradient(90deg, #FF0000, #FF7F00, #FFFF00, #00FF00, #0000FF, #4B0082, #8B00FF)",
@@ -348,14 +387,20 @@ function applyXPBarColor(color) {
 
   if (colorMap[color]) {
     xpGradient.style.background = colorMap[color];
+    updateDebug(`XP bar color set to: ${color}`);
   } else if (color && color.startsWith("#")) {
-    // Custom hex color
     xpGradient.style.background = color;
+    updateDebug(`XP bar custom color: ${color}`);
   }
 }
 
 function applySettings(settings) {
-  if (!settings) return;
+  if (!settings) {
+    updateDebug("No settings data yet");
+    return;
+  }
+
+  updateDebug(`Applying settings: ${JSON.stringify(settings)}`);
 
   // Apply XP bar color
   if (settings.xpBarColor) {
@@ -365,6 +410,7 @@ function applySettings(settings) {
   // Apply background image
   if (settings.backgroundImageUrl) {
     document.body.style.backgroundImage = `url('${settings.backgroundImageUrl}')`;
+    updateDebug(`Background set to: ${settings.backgroundImageUrl}`);
   }
 
   // Apply font color
@@ -380,23 +426,28 @@ function applySettings(settings) {
 
     const color = colorMap[settings.fontColor] || settings.fontColor;
     document.body.style.color = color;
+    updateDebug(`Font color set to: ${settings.fontColor}`);
   }
 
   // Show/hide party title
   if (settings.showPartyTitle !== undefined) {
     const header = document.getElementById("header");
     header.style.display = settings.showPartyTitle ? "block" : "none";
+    updateDebug(`Party title visibility: ${settings.showPartyTitle}`);
   }
 }
 
 function listenToSettings(code) {
   const settingsRef = ref(database, `parties/${code}/settings`);
   
+  updateDebug(`Listening to settings at: parties/${code}/settings`);
+  
   onValue(settingsRef, (snapshot) => {
     const settings = snapshot.val();
-    console.log("Settings received:", settings);
+    updateDebug(`Settings snapshot received: ${settings ? 'YES' : 'NO'}`);
     applySettings(settings);
   }, (error) => {
+    updateDebug(`Settings error: ${error.message}`);
     console.warn("Settings error (non-critical):", error);
   });
 }
@@ -404,11 +455,24 @@ function listenToSettings(code) {
 function listenToPartyData(code) {
   const partyRef = ref(database, `parties/${code}`);
   
+  updateDebug(`Listening to party data at: parties/${code}`);
+  
+  // Timeout to show error if no data after 10 seconds
+  const timeout = setTimeout(() => {
+    if (!dataReceived) {
+      showError("Still loading... Make sure your DM has created a party with code: " + code);
+      updateDebug("TIMEOUT: No data received after 10 seconds");
+    }
+  }, 10000);
+  
   onValue(partyRef, (snapshot) => {
+    clearTimeout(timeout);
     const data = snapshot.val();
-    console.log("Firebase data received:", data);
+    updateDebug(`Party data snapshot received: ${data ? 'YES' : 'NO'}`);
     updatePartyView(data);
   }, (error) => {
+    clearTimeout(timeout);
+    updateDebug(`Party data error: ${error.message}`);
     console.error("Firebase error:", error);
     showError("Error loading party data: " + error.message);
   });
