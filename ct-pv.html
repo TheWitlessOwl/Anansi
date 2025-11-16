@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Combat Tracker - Player View</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Cinzel', 'Georgia', serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d1b00 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #e8d4a0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #8b0000 0%, #4a0000 100%);
+            padding: 20px;
+            border-radius: 12px;
+            border: 3px solid #d4af37;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.1);
+            margin-bottom: 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header::before,
+        .header::after {
+            content: '⚔';
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 2em;
+            color: #d4af37;
+        }
+
+        .header::before {
+            left: 20px;
+        }
+
+        .header::after {
+            right: 20px;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            color: #d4af37;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+            letter-spacing: 3px;
+            font-weight: bold;
+        }
+
+        .round {
+            background: linear-gradient(135deg, #2d1b00 0%, #1a1a1a 100%);
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #d4af37;
+            text-align: center;
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #d4af37;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+            letter-spacing: 2px;
+        }
+
+        .card {
+            background: linear-gradient(135deg, #2a1810 0%, #1a0f08 100%);
+            padding: 18px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border: 2px solid #8b6914;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .card.active {
+            background: linear-gradient(135deg, #4a2810 0%, #2a1808 100%);
+            border: 3px solid #d4af37;
+            transform: scale(1.03);
+            box-shadow: 0 8px 20px rgba(212, 175, 55, 0.4), 0 0 30px rgba(212, 175, 55, 0.2);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .name-section {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .name {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #e8d4a0;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+            letter-spacing: 1px;
+        }
+
+        .type-badge {
+            font-size: 0.7em;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .type-player {
+            background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+            color: #93c5fd;
+            border: 1px solid #3b82f6;
+        }
+
+        .type-ally {
+            background: linear-gradient(135deg, #166534 0%, #15803d 100%);
+            color: #86efac;
+            border: 1px solid #22c55e;
+        }
+
+        .type-enemy {
+            background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
+            color: #fca5a5;
+            border: 1px solid #dc2626;
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            font-size: 1em;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: #c9b58c;
+        }
+
+        .stat-label {
+            font-weight: bold;
+            color: #d4af37;
+        }
+
+        .health-bar-container {
+            flex: 1;
+            min-width: 200px;
+            max-width: 400px;
+        }
+
+        .health-bar {
+            width: 100%;
+            height: 32px;
+            background: #1a0f08;
+            border: 2px solid #8b6914;
+            border-radius: 6px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+        }
+
+        .health-bar-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+            position: relative;
+            background: linear-gradient(90deg, #dc2626 0%, #ef4444 50%, #dc2626 100%);
+            box-shadow: 0 0 10px rgba(220, 38, 38, 0.5);
+        }
+
+        .health-bar-fill.healthy {
+            background: linear-gradient(90deg, #16a34a 0%, #22c55e 50%, #16a34a 100%);
+            box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+        }
+
+        .health-bar-fill.wounded {
+            background: linear-gradient(90deg, #ea580c 0%, #f97316 50%, #ea580c 100%);
+            box-shadow: 0 0 10px rgba(249, 115, 22, 0.5);
+        }
+
+        .health-bar-fill.critical {
+            background: linear-gradient(90deg, #dc2626 0%, #ef4444 50%, #dc2626 100%);
+            box-shadow: 0 0 10px rgba(220, 38, 38, 0.5);
+            animation: pulse-red 1s ease-in-out infinite;
+        }
+
+        @keyframes pulse-red {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .health-bar-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+            font-size: 0.9em;
+            z-index: 2;
+        }
+
+        .conditions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .condition {
+            padding: 5px 12px;
+            background: linear-gradient(135deg, #92400e 0%, #b45309 100%);
+            color: #fef3c7;
+            border-radius: 6px;
+            font-size: 0.85em;
+            font-weight: 600;
+            border: 1px solid #d97706;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .death-saves {
+            margin-top: 12px;
+            padding: 12px;
+            background: linear-gradient(135deg, #450a0a 0%, #7f1d1d 100%);
+            border-radius: 6px;
+            border: 2px solid #991b1b;
+            font-size: 0.95em;
+        }
+
+        .death-saves-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #fca5a5;
+            text-align: center;
+            font-size: 1.1em;
+            letter-spacing: 1px;
+        }
+
+        .death-saves-grid {
+            display: flex;
+            gap: 15px;
+            margin-top: 8px;
+        }
+
+        .death-save-group {
+            flex: 1;
+        }
+
+        .death-save-label {
+            font-size: 0.9em;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #d4af37;
+        }
+
+        .death-save-circles {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+        }
+
+        .death-save-circle {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 3px solid #8b6914;
+            background: #1a0f08;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .death-save-circle.filled.success {
+            background: radial-gradient(circle, #22c55e 0%, #16a34a 100%);
+            border-color: #16a34a;
+            box-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
+        }
+
+        .death-save-circle.filled.failure {
+            background: radial-gradient(circle, #ef4444 0%, #dc2626 100%);
+            border-color: #dc2626;
+            box-shadow: 0 0 8px rgba(220, 38, 38, 0.6);
+        }
+
+        .empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: #d4af37;
+            font-size: 1.3em;
+            letter-spacing: 2px;
+        }
+
+        @keyframes pulse-active {
+            0%, 100% { 
+                box-shadow: 0 8px 20px rgba(212, 175, 55, 0.4), 0 0 30px rgba(212, 175, 55, 0.2);
+            }
+            50% { 
+                box-shadow: 0 8px 20px rgba(212, 175, 55, 0.6), 0 0 40px rgba(212, 175, 55, 0.4);
+            }
+        }
+
+        .active {
+            animation: pulse-active 2s ease-in-out infinite;
+        }
+
+        .stable-badge {
+            background: linear-gradient(135deg, #166534 0%, #15803d 100%);
+            color: #86efac;
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: bold;
+            border: 1px solid #22c55e;
+            margin-left: 8px;
+        }
+
+        .dead-badge {
+            background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
+            color: #fca5a5;
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: bold;
+            border: 1px solid #dc2626;
+            margin-left: 8px;
+        }
+
+        .ac-shield {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+            border: 2px solid #6b7280;
+            border-radius: 6px;
+            font-weight: bold;
+            color: #d1d5db;
+        }
+
+        .temp-hp {
+            color: #60a5fa;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚔ COMBAT TRACKER ⚔</h1>
+            <div id="session-info" style="color: #d4af37; font-size: 0.7em; margin-top: 8px; letter-spacing: 2px;"></div>
+        </div>
+
+        <div id="round-display"></div>
+        <div id="combatants"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase, ref, onValue } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const sessionCode = urlParams.get('code');
+
+        if (!sessionCode) {
+            document.getElementById('combatants').innerHTML = '<div class="empty">No session code provided</div>';
+        }
+
+        document.getElementById('session-info').textContent = `SESSION: ${sessionCode || 'NONE'}`;
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAJDqSAHJDvUrgW6clk3BaNqUz5Gq7E3hY",
+            authDomain: "anansi-party-tracker.firebaseapp.com",
+            databaseURL: "https://anansi-party-tracker-default-rtdb.firebaseio.com",
+            projectId: "anansi-party-tracker",
+            storageBucket: "anansi-party-tracker.firebasestorage.app",
+            messagingSenderId: "627434109412",
+            appId: "1:627434109412:web:f4f9676f30095aa8feaff1"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        function renderCombat(data) {
+            if (!data) {
+                document.getElementById('combatants').innerHTML = '<div class="empty">Awaiting combat...</div>';
+                return;
+            }
+
+            const { combatants = [], round = 1, currentIndex = 0, combatStarted = false } = data;
+
+            const roundDiv = document.getElementById('round-display');
+            if (combatStarted) {
+                roundDiv.innerHTML = `<div class="round">⚔ ROUND ${round} ⚔</div>`;
+            } else {
+                roundDiv.innerHTML = '';
+            }
+
+            let allCombatants = combatants.filter(c => c.type === 'player' || c.type === 'ally' || c.visible);
+
+            if (allCombatants.length === 0) {
+                document.getElementById('combatants').innerHTML = '<div class="empty">No combatants visible</div>';
+                return;
+            }
+
+            let visible = allCombatants;
+            if (combatStarted) {
+                const currentCombatant = combatants[currentIndex];
+                if (currentCombatant && (currentCombatant.type === 'player' || currentCombatant.type === 'ally' || currentCombatant.visible)) {
+                    const visibleIndex = visible.findIndex(c => c.id === currentCombatant.id);
+                    if (visibleIndex !== -1) {
+                        visible = [...visible.slice(visibleIndex), ...visible.slice(0, visibleIndex)];
+                    }
+                }
+            }
+
+            const html = visible.map((c, idx) => {
+                const isActive = combatStarted && idx === 0;
+                const isDead = c.hp <= 0;
+                const hpPercent = Math.max(0, Math.min(100, (c.hp / c.maxHp) * 100));
+                
+                let healthClass = 'healthy';
+                if (hpPercent <= 25) healthClass = 'critical';
+                else if (hpPercent <= 50) healthClass = 'wounded';
+
+                const conditions = Array.isArray(c.conditions) ? c.conditions : [];
+                const typeBadgeClass = c.type === 'player' ? 'type-player' : c.type === 'ally' ? 'type-ally' : 'type-enemy';
+                const typeLabel = c.type === 'player' ? 'Player' : c.type === 'ally' ? 'Ally' : 'Enemy';
+
+                const isStabilized = c.type === 'player' && isDead && c.deathSaves && c.deathSaves.successes >= 3;
+                const isFullyDead = c.type === 'player' && isDead && c.deathSaves && c.deathSaves.failures >= 3;
+
+                const showNumbers = c.type === 'player' || c.type === 'ally';
+                const healthText = showNumbers ? `${c.hp} / ${c.maxHp}` : '';
+
+                const deathSavesHtml = (c.type === 'player' && isDead) ? `
+                    <div class="death-saves">
+                        <div class="death-saves-title">
+                            ☠ DEATH SAVING THROWS ☠
+                            ${isStabilized ? '<span class="stable-badge">STABLE</span>' : ''}
+                            ${isFullyDead ? '<span class="dead-badge">DEAD</span>' : ''}
+                        </div>
+                        <div class="death-saves-grid">
+                            <div class="death-save-group">
+                                <div class="death-save-label">Successes</div>
+                                <div class="death-save-circles">
+                                    ${[1, 2, 3].map(i => `
+                                        <div class="death-save-circle ${i <= (c.deathSaves?.successes || 0) ? 'filled success' : ''}"></div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            <div class="death-save-group">
+                                <div class="death-save-label">Failures</div>
+                                <div class="death-save-circles">
+                                    ${[1, 2, 3].map(i => `
+                                        <div class="death-save-circle ${i <= (c.deathSaves?.failures || 0) ? 'filled failure' : ''}"></div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                ` : '';
+
+                return `
+                    <div class="card ${isActive ? 'active' : ''}">
+                        <div class="card-header">
+                            <div class="name-section">
+                                <div class="name">
+                                    ${c.name} 
+                                    ${isDead && !isStabilized ? '☠' : ''}
+                                    ${isStabilized ? '😴' : ''}
+                                </div>
+                                <span class="type-badge ${typeBadgeClass}">${typeLabel}</span>
+                            </div>
+                            <div class="ac-shield">
+                                🛡 AC ${c.ac}
+                            </div>
+                        </div>
+                        <div class="stats">
+                            <div class="health-bar-container">
+                                <div class="health-bar">
+                                    <div class="health-bar-fill ${healthClass}" style="width: ${hpPercent}%"></div>
+                                    ${healthText ? `<div class="health-bar-text">${healthText}</div>` : ''}
+                                </div>
+                            </div>
+                            ${c.tempHp > 0 ? `<div class="stat"><span class="stat-label">Temp HP:</span> <span class="temp-hp">${c.tempHp}</span></div>` : ''}
+                        </div>
+                        ${conditions.length > 0 ? `
+                            <div class="conditions">
+                                ${conditions.map(cond => `<span class="condition">${cond}</span>`).join('')}
+                            </div>
+                        ` : ''}
+                        ${deathSavesHtml}
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('combatants').innerHTML = html;
+        }
+
+        if (sessionCode) {
+            const combatRef = ref(database, `combat/${sessionCode}/state`);
+            
+            onValue(combatRef, (snapshot) => {
+                const data = snapshot.val();
+                renderCombat(data);
+            }, (error) => {
+                console.error('Firebase error:', error);
+                document.getElementById('combatants').innerHTML = '<div class="empty">Error connecting to Firebase</div>';
+            });
+        }
+    </script>
+</body>
+</html>
