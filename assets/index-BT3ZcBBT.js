@@ -474,6 +474,11 @@ At Will: *Detect Evil and Good*
     padding: 12px;
     overflow: auto;
   }
+  @media (max-width: 768px) {
+    .cs-main-content {
+      overflow: visible;
+    }
+  }
   .cs-sheet-container {
     flex: 1;
     background: #fff;
@@ -481,6 +486,12 @@ At Will: *Detect Evil and Good*
     border-radius: 8px;
     padding: 16px;
     overflow: auto;
+  }
+  @media (max-width: 768px) {
+    .cs-sheet-container {
+      overflow: visible;
+      height: auto;
+    }
   }
   .cs-empty-state {
     display: flex;
@@ -693,6 +704,11 @@ At Will: *Detect Evil and Good*
     }
     .cs-main-content {
       flex-direction: column;
+      overflow: visible;
+    }
+    .cs-sheet-container {
+      overflow: visible;
+      height: auto;
     }
     .cs-portrait-section {
       flex: 1 1 auto;
