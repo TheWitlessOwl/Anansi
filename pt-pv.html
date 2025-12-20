@@ -5,17 +5,33 @@
 <title>Party Tracker - Player View</title>
 <link rel="icon" type="image/png" href="logo.svg" />
 <style>
+:root {
+  /* Responsive base font size */
+  font-size: clamp(14px, 1.4vw, 22px);
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden; /* prevent outer scrollbar */
+}
+
 body {
   font-family: 'BlackChancery', cursive;
   text-align: center;
-  padding: 50px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 100dvh; /* dynamic viewport height */
+  padding: clamp(16px, 3vw, 50px);
   background: url('background.jpg') no-repeat center center;
   background-size: cover;
   background-color: #92bbf1;
   color: #000000;
-  min-height: 100vh;
   text-shadow: 1px 1px 2px #000000;
-  margin: 0;
+  box-sizing: border-box;
 }
 
 h1, #partyName, #levelText, .player-box {
@@ -44,8 +60,7 @@ h1 {
 }
 
 .xp-bar {
-  width: 80%;
-  max-width: 800px;
+  width: min(80%, 900px);
   margin: 20px auto;
   height: 28px;
   background: #222;
@@ -73,11 +88,15 @@ h1 {
 }
 
 #characterNames { 
+  flex: 1; /* take up remaining space */
   margin-top: 30px; 
   display: flex; 
   flex-direction: column; 
   gap: 15px; 
   align-items: center; 
+  overflow-y: auto; /* scroll internally if needed */
+  width: 100%;
+  max-width: 1200px;
 }
 
 .player-row { 
